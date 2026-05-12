@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>北京积分落户计算器</title>
+<style>
+:root{
+  --bg:#f5f3ee;--surface:#fff;--surface2:#f0ede5;--border:#ddd9cf;
+  --accent:#1a4d2e;--accent2:#2d6a4f;--accent-light:#e8f4ec;
+  --text:#1c1a17;--text2:#5a564e;--text3:#9c9890;
+  --danger:#991b1b;--danger-bg:#fee2e2;
+  --warn:#92400e;--warn-bg:#fef3c7;
+  --r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'PingFang SC','Helvetica Neue','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;}
+.app{max-width:980px;margin:0 auto;padding:16px 12px 60px;}
+
+/* header */
+.hdr{padding:16px 0 20px;}
+.hdr h1{font-size:18px;font-weight:700;color:var(--accent);}
+.hdr p{font-size:12px;color:var(--text3);margin-top:3px;}
+
+/* two-col layout */
+.layout{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start;}
+@media(max-width:700px){.layout{grid-template-columns:1fr;}}
+
+/* card */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.ct{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.ct::before{content:'';width:3px;height:13px;background:var(--accent);border-radius:2px;flex-shrink:0;}
+
+/* fields */
+.f{margin-bottom:12px;}
+.f label,.fl{display:block;font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:500;}
+input[type=number],input[type=month],select{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);outline:none;-webkit-appearance:none;}
+input[type=number]:focus,input[type=month]:focus,select:focus{border-color:var(--accent2);}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+@media(max-width:400px){.fr2{grid-template-columns:1fr;}.fr3{grid-template-columns:1fr 1fr;}}
+.hint{font-size:11px;color:var(--text3);margin-top:3px;line-height:1.5;}
+.warn-box{background:var(--warn-bg);border:1px solid #fcd34d;border-radius:6px;padding:9px 11px;font-size:11px;color:var(--warn);margin-top:8px;line-height:1.6;}
+
+/* tax compact */
+.tax-radio-group{display:flex;flex-wrap:wrap;gap:4px 6px;}
+.tax-radio-group label{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);font-weight:400;white-space:nowrap;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surface);}
+.tax-radio-group label:has(input:checked){border-color:var(--accent2);background:var(--accent-light);color:var(--accent);font-weight:600;}
+.tax-radio-group input[type=radio]{display:none;}
+
+/* score panel */
+.score-panel{position:sticky;top:12px;}
+.total-box{background:var(--accent);border-radius:var(--r);padding:20px 16px;color:#fff;margin-bottom:12px;text-align:center;}
+.total-box .tl{font-size:11px;opacity:.75;margin-bottom:2px;}
+.total-box .tn{font-size:48px;font-weight:700;line-height:1;}
+.total-box .ts{font-size:11px;opacity:.65;margin-top:4px;}
+@media(max-width:700px){.total-box .tn{font-size:36px;}}
+
+/* breakdown table */
+.bt{width:100%;border-collapse:collapse;font-size:12px;}
+.bt th{text-align:left;padding:5px 6px;border-bottom:2px solid var(--border);color:var(--text3);font-weight:600;font-size:11px;}
+.bt th.right,.bt td.right{text-align:right;}
+.bt td{padding:5px 6px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.bt tr:last-child td{border-bottom:none;}
+.bt .total-row td{font-weight:700;font-size:13px;border-top:2px solid var(--border);padding-top:8px;}
+.pos{color:var(--accent2);font-weight:600;}
+.neg{color:var(--danger);font-weight:600;}
+.zer{color:var(--text3);}
+.ded{font-size:10px;color:var(--danger);}
+
+/* future projection table */
+.proj-table-wrap{overflow-x:auto;margin-top:8px;}
+.proj-table{width:100%;border-collapse:collapse;font-size:12px;}
+.proj-table th{padding:6px 8px;background:var(--surface2);border:1px solid var(--border);font-weight:600;font-size:11px;white-space:nowrap;}
+.proj-table td{padding:6px 8px;border:1px solid var(--border);text-align:right;white-space:nowrap;}
+.proj-table td.name{text-align:left;color:var(--text2);}
+.proj-table .total-r td{font-weight:700;background:var(--accent-light);}
+.proj-table .diff-cell{font-size:10px;}
+.proj-table .diff-cell.up{color:var(--accent2);}
+.proj-table .diff-cell.dn{color:var(--danger);}
+
+/* qual badges */
+.qual-row{display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 0;}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge.ok{background:var(--accent-light);color:var(--accent);}
+.badge.fail{background:var(--danger-bg);color:var(--danger);}
+
+/* scenario sim */
+.sim-section{background:var(--surface2);border-radius:8px;padding:14px;margin-bottom:12px;}
+.sim-section .sim-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.sim-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
+.sim-toggle input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent2);cursor:pointer;}
+.sim-body{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.sim-result-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:12px;}
+.sim-result-box .rrow{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border);}
+.sim-result-box .rrow:last-child{border-bottom:none;}
+.sim-result-box .rrow.total-r{font-weight:700;font-size:14px;padding-top:8px;border-top:2px solid var(--border);}
+.diff-up{color:var(--accent2);font-weight:700;}
+.diff-dn{color:var(--danger);font-weight:700;}
+
+/* sim fields */
+
+.calc-btn{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;}
+.calc-btn:active{opacity:.85;}
+
+.divider{height:1px;background:var(--border);margin:14px 0;}
+
+.proj-info{font-size:11px;color:var(--text3);margin-bottom:8px;background:var(--surface2);padding:8px 10px;border-radius:6px;}
+.proj-year-input{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.proj-year-input label{font-size:12px;color:var(--text2);white-space:nowrap;}
+.proj-year-input input{width:80px;}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="hdr">
+  <h1>北京积分落户计算器</h1>
+  <p>依据《北京市积分落户操作管理细则》（京人社开发发〔2020〕8号）</p>
+</div>
+
+<div class="layout">
+<div><!-- left col -->
+
+<!-- 基础资格 -->
+<div class="card">
+  <div class="ct">基础资格条件</div>
+  <div class="fr2">
+    <div class="f"><label>出生年月</label><input type="month" id="birthYM" value="1985-06"></div>
+    <div class="f"><label>性别</label>
+      <select id="gender">
+        <option value="male">男（退休60岁）</option>
+        <option value="female_worker">女工人（退休50岁）</option>
+        <option value="female_mgr">女干部/管理岗（55岁）</option>
+      </select>
+    </div>
+  </div>
+  <div class="fr2">
+    <div class="f"><label>居住证申领年月</label><input type="month" id="residenceYM" value="2015-01"></div>
+    <div class="f"><label>开始在京缴社保年月</label><input type="month" id="ssStartYM" value="2015-01"></div>
+  </div>
+  <div class="fr2">
+    <div class="f"><label>补缴月数（近期）</label><input type="number" id="backpayMonths" value="0" min="0"><div class="hint">≤5个月方可申报</div></div>
+    <div class="f"><label>刑事犯罪记录</label>
+      <select id="criminal"><option value="no">无</option><option value="yes">有（取消资格）</option></select>
+    </div>
+  </div>
+</div>
+
+<!-- 就业 -->
+<div class="card">
+  <div class="ct">合法稳定就业</div>
+  <div class="f"><label>目前在京正常累计缴纳社保月数（1998年7月起，不含补缴）</label>
+    <input type="number" id="ssMonths" value="120" min="0">
+    <div class="hint">每满12个月积3分。学历期间重叠月数将自动扣除（见教育背景）。</div>
+  </div>
+</div>
+
+<!-- 住所 -->
+<div class="card">
+  <div class="ct">合法稳定住所</div>
+  <div class="fr2">
+    <div class="f"><label>自有住所居住（月）</label><input type="number" id="ownMonths" value="60" min="0"><div class="hint">满1年积1分</div></div>
+    <div class="f"><label>租赁/单位宿舍（月）</label><input type="number" id="rentMonths" value="60" min="0"><div class="hint">满1年积0.5分</div></div>
+  </div>
+  <div class="hint">住所年限不超过就业年限；同一时段不重复积分；优先计算自有住所。</div>
+</div>
+
+<!-- 教育背景 -->
+<div class="card">
+  <div class="ct">教育背景</div>
+  <div class="fr3">
+    <div class="f"><label>最高学历</label>
+      <select id="eduLevel">
+        <option value="0">无/高中及以下</option>
+        <option value="10">专科</option>
+        <option value="15" selected>本科</option>
+        <option value="26">硕士</option>
+        <option value="34">博士</option>
+      </select>
+    </div>
+    <div class="f"><label>毕业年月</label><input type="month" id="gradYM" value="2008-07"></div>
+    <div class="f"><label>学制（年）</label><input type="number" id="eduYears" value="4" min="1" max="8"><div class="hint">专科2-3，本科4，硕士2-3，博士3-5</div></div>
+  </div>
+  <div class="warn-box">⚠ 取得学历期间若与在京缴社保时段重叠，该期间的就业积分和住所积分将从总分中扣除，避免重复计算。</div>
+</div>
+
+<!-- 职住区域 -->
+<div class="card">
+  <div class="ct">职住区域（城六区外）</div>
+  <div class="fr2">
+    <div class="f"><label>在城六区外自有住所居住（月，2018.1起）</label><input type="number" id="subLiveM" value="0" min="0"><div class="hint">满1年+2分，最高12分</div></div>
+    <div class="f"><label>同时在城六区外工作（月，2018.1起）</label><input type="number" id="subWorkM" value="0" min="0"><div class="hint">满足居住条件+满1年额外+1分</div></div>
+  </div>
+</div>
+
+<!-- 创新创业 -->
+<div class="card">
+  <div class="ct">创新创业</div>
+  <div class="f"><label>获奖/融资情况（取最高，各项不累计）</label>
+    <select id="innovation">
+      <option value="0">无</option>
+      <option value="5">市级奖项/大赛奖</option>
+      <option value="10">国家级奖项/大赛奖</option>
+      <option value="15">世界级奖项（国家认定）</option>
+      <option value="8">高新企业持股≥10%且近3年达融资条件</option>
+    </select>
+    <div class="hint">具体分值见官方附件3，此处为估算。</div>
+  </div>
+</div>
+
+<!-- 纳税 -->
+<div class="card">
+  <div class="ct">纳税指标</div>
+  <div class="f">
+    <label>近3年个人所得税纳税额在10万元及以上</label>
+    <div class="tax-radio-group" style="margin-top:6px">
+      <label><input type="radio" name="taxYears" value="0" checked>0年</label>
+      <label><input type="radio" name="taxYears" value="2">1年（+2分）</label>
+      <label><input type="radio" name="taxYears" value="4">2年（+4分）</label>
+      <label><input type="radio" name="taxYears" value="6">3年（+6分）</label>
+    </div>
+  </div>
+  <div class="f">
+    <label>自积分落户申报启动前连续5个自然年度内涉税违法行为记录</label>
+    <div class="tax-radio-group" style="margin-top:6px">
+      <label><input type="radio" name="taxViolR" value="0" checked>无</label>
+      <label><input type="radio" name="taxViolR" value="-12">1条（-12分）</label>
+      <label><input type="radio" name="taxViolR" value="-24">2条（-24分）</label>
+      <label><input type="radio" name="taxViolR" value="-36">3条及以上（-36分）</label>
+    </div>
+  </div>
+</div>
+
+<!-- 荣誉/守法 -->
+<div class="card">
+  <div class="ct">荣誉表彰 / 守法记录</div>
+  <div class="fr2">
+    <div class="f"><label>荣誉表彰（取最高）</label>
+      <select id="honor">
+        <option value="0">无</option>
+        <option value="10">首都道德模范/首都见义勇为好市民</option>
+        <option value="20">全国道德模范/全国见义勇为英雄模范</option>
+        <option value="30">省部级及以上劳动模范</option>
+      </select>
+      <div class="hint">分值为估算，见官方附件4</div>
+    </div>
+    <div class="f"><label>行政拘留（次，近5年）</label>
+      <input type="number" id="detention" value="0" min="0">
+      <div class="hint">每次扣分（具体以公安记录为准）</div>
+    </div>
+  </div>
+</div>
+
+<button class="calc-btn" onclick="calculate()">计算积分</button>
+
+<!-- 情景模拟 -->
+<div class="card" style="margin-top:16px">
+  <div class="ct">情景对比模拟</div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">勾选想要改变的条件（可同时勾选多项），统一计算方案B总积分，与方案A对比。</div>
+
+  <!-- 纳税模拟块 -->
+  <div class="sim-section">
+    <div class="sim-title">
+      <label class="sim-toggle"><input type="checkbox" id="chk_tax" onchange="toggleSim('tax')"> 调整纳税条件</label>
+    </div>
+    <div class="sim-body" id="simBody_tax" style="display:none">
+      <div class="f">
+        <label>近3年个税≥10万元</label>
+        <div class="tax-radio-group" style="margin-top:6px">
+          <label><input type="radio" name="sim_taxYears" value="0" checked>0年</label>
+          <label><input type="radio" name="sim_taxYears" value="2">1年（+2分）</label>
+          <label><input type="radio" name="sim_taxYears" value="4">2年（+4分）</label>
+          <label><input type="radio" name="sim_taxYears" value="6">3年（+6分）</label>
+        </div>
+      </div>
+      <div class="f">
+        <label>涉税违法行为记录（近5年）</label>
+        <div class="tax-radio-group" style="margin-top:6px">
+          <label><input type="radio" name="sim_taxViolR" value="0" checked>无</label>
+          <label><input type="radio" name="sim_taxViolR" value="-12">1条（-12分）</label>
+          <label><input type="radio" name="sim_taxViolR" value="-24">2条（-24分）</label>
+          <label><input type="radio" name="sim_taxViolR" value="-36">3条+（-36分）</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 学历模拟块 -->
+  <div class="sim-section">
+    <div class="sim-title">
+      <label class="sim-toggle"><input type="checkbox" id="chk_edu" onchange="toggleSim('edu')"> 调整学历条件</label>
+    </div>
+    <div class="sim-body" id="simBody_edu" style="display:none">
+      <div class="fr3">
+        <div class="f"><label>最高学历</label>
+          <select id="sim_eduLevel">
+            <option value="0">无/高中</option><option value="10">专科</option>
+            <option value="15">本科</option><option value="26" selected>硕士</option><option value="34">博士</option>
+          </select>
+        </div>
+        <div class="f"><label>毕业年月</label><input type="month" id="sim_gradYM" value="2011-07"></div>
+        <div class="f"><label>学制（年）</label><input type="number" id="sim_eduYears" value="3" min="1" max="8"></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="calc-btn" onclick="runSim()">计算方案B积分</button>
+
+  <!-- 对比结果 -->
+  <div id="sim_result" style="display:none;margin-top:14px">
+    <div class="sim-result-box">
+      <div class="rrow"><span>指标</span><span>方案A（现状）</span><span>方案B（模拟）</span></div>
+      <div id="sim_rows"></div>
+      <div class="rrow total-r"><span>合计</span><span id="simTotA">—</span><span id="simTotB">—</span></div>
+    </div>
+    <div style="margin-top:10px;font-size:13px;text-align:center">
+      较方案A <span id="simDiffLabel" style="font-size:18px;font-weight:700"></span>
+    </div>
+  </div>
+</div>
+
+</div><!-- end left -->
+
+<!-- RIGHT: score panel -->
+<div class="score-panel">
+  <div class="total-box">
+    <div class="tl">当前预估积分</div>
+    <div class="tn" id="totalScore">—</div>
+    <div class="ts" id="scoreYear">填写信息后点击计算</div>
+  </div>
+
+  <!-- 资格 -->
+  <div class="card">
+    <div class="ct">资格审查</div>
+    <div id="qualResult" style="font-size:12px;color:var(--text2)">待计算</div>
+  </div>
+
+  <!-- 积分明细 + 未来预测 -->
+  <div class="card">
+    <div class="ct">积分明细</div>
+
+    <div class="proj-year-input">
+      <label>预测至申报年份</label>
+      <input type="number" id="futureYear" value="" min="2025" max="2060" placeholder="如2028" style="width:90px">
+    </div>
+    <div class="proj-info" id="projInfo" style="display:none"></div>
+
+    <div class="proj-table-wrap">
+      <table class="proj-table" id="projTable">
+        <thead>
+          <tr>
+            <th style="text-align:left">指标</th>
+            <th id="colA">当前</th>
+            <th id="colFuture" style="display:none">预测年</th>
+            <th id="colDiff" style="display:none">变化</th>
+          </tr>
+        </thead>
+        <tbody id="projBody">
+          <tr><td class="name" colspan="4" style="color:var(--text3);text-align:center">待计算</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:10px;font-size:11px;color:var(--text3)">近年分数线约100-120分，以当年官方公告为准。</div>
+  </div>
+</div>
+
+</div><!-- end layout -->
+</div><!-- end app -->
+
+<script>
+const now = new Date();
+const curYear = now.getFullYear();
+document.getElementById('futureYear').placeholder = '如'+(curYear+2);
+
+let state = null;
+
+function parseYM(s){ if(!s)return null; const[y,m]=s.split('-').map(Number); return{y,m}; }
+function msDiff(a,b){ return(b.y-a.y)*12+(b.m-a.m); }
+function num(id){ return parseFloat(document.getElementById(id).value)||0; }
+function str(id){ return document.getElementById(id).value; }
+function radio(name){ const el=document.querySelector(`input[name=${name}]:checked`); return el?parseFloat(el.value):0; }
+
+function getBaseYear(){ return parseInt(str('baseYear'))||curYear; }
+
+function calcAge(birthStr, refYear){
+  const b=parseYM(birthStr); if(!b)return 99;
+  return refYear - b.y;
+}
+
+function calcRetireOk(birthStr, gender, refYear, refMonth){
+  const b=parseYM(birthStr); if(!b)return false;
+  const ageMonths=(refYear-b.y)*12+(refMonth-b.m);
+  if(gender==='male') return ageMonths < 60*12;
+  if(gender==='female_worker') return ageMonths < 50*12;
+  return ageMonths < 55*12;
+}
+
+function calcEduDeduct(gradStr, eduYrs, ssStartStr, ownM, rentM){
+  const grad=parseYM(gradStr); const ssStart=parseYM(ssStartStr);
+  if(!grad||!ssStart) return{ssDeductYrs:0,ssDeductScore:0,ownDeductScore:0,rentDeductScore:0,overlapM:0};
+  const studyStartMs=(grad.y-eduYrs)*12+grad.m;
+  const studyEndMs=grad.y*12+grad.m;
+  const ssStartMs=ssStart.y*12+ssStart.m;
+  const overlapStart=Math.max(ssStartMs,studyStartMs);
+  const overlapEnd=studyEndMs;
+  const overlapM=Math.max(0,overlapEnd-overlapStart);
+  const ssDeductYrs=Math.floor(overlapM/12);
+  const ssDeductScore=ssDeductYrs*3;
+  const ownDeductYrs=Math.min(Math.floor(ownM/12),ssDeductYrs);
+  const rentDeductYrs=Math.min(Math.floor(rentM/12),Math.max(0,ssDeductYrs-ownDeductYrs));
+  return{ssDeductYrs,ssDeductScore,ownDeductScore:ownDeductYrs,rentDeductScore:rentDeductYrs*0.5,overlapM,ownDeductYrs,rentDeductYrs};
+}
+
+function calcHousing(ownM, rentM, ssM){
+  const maxY=Math.floor(ssM/12);
+  const ownY=Math.min(Math.floor(ownM/12),maxY);
+  const rentY=Math.min(Math.floor(rentM/12),Math.max(0,maxY-ownY));
+  return{ownScore:ownY,rentScore:rentY*0.5,ownY,rentY};
+}
+
+function calcSuburban(liveM, workM){
+  const liveY=Math.min(Math.floor(liveM/12),6);
+  const workY=Math.min(Math.floor(Math.min(workM,liveM)/12),6);
+  return{score:Math.min(liveY*2+workY*1,12),liveY,workY};
+}
+
+function calcAgeScore(birthStr, refYear){
+  const age=calcAge(birthStr,refYear);
+  if(age<=45)return 20;if(age<=46)return 16;if(age<=47)return 12;if(age<=48)return 8;if(age<=49)return 4;return 0;
+}
+
+function calcTaxScore(yearsScore, violScore){ return yearsScore + violScore; }
+
+function buildScoreObject(params){
+  const {ssM,ownM,rentM,eduLevel,gradStr,eduYrs,ssStartStr,subLiveM,subWorkM,innovation,taxScore,honor,detention,birthStr,baseYear}=params;
+  const deduct=calcEduDeduct(gradStr,eduYrs,ssStartStr,ownM,rentM);
+  const housing=calcHousing(ownM,rentM,ssM);
+  const suburban=calcSuburban(subLiveM,subWorkM);
+  const ageScore=calcAgeScore(birthStr,baseYear);
+  const ssScore=Math.floor(ssM/12)*3;
+  const netSs=ssScore-deduct.ssDeductScore;
+  const netOwn=housing.ownScore-deduct.ownDeductScore;
+  const netRent=housing.rentScore-deduct.rentDeductScore;
+  const detentionScore=detention*(-5);
+  const total=netSs+netOwn+netRent+eduLevel+suburban.score+innovation+taxScore+ageScore+honor+detentionScore;
+  return{ssScore,netSs,ownScore:housing.ownScore,netOwn,rentScore:housing.rentScore,netRent,
+    eduLevel,suburban:suburban.score,innovation,taxScore,ageScore,honor,detentionScore,
+    deduct,total,housing,baseYear};
+}
+
+function calculate(){
+  const baseYear=curYear; // always current year as base
+  const birthStr=str('birthYM'); const gender=str('gender');
+  const residenceStr=str('residenceYM'); const ssStartStr=str('ssStartYM');
+  const backpay=num('backpayMonths'); const criminal=str('criminal');
+  const ssM=num('ssMonths'); const ownM=num('ownMonths'); const rentM=num('rentMonths');
+  const eduLevel=parseInt(str('eduLevel')); const gradStr=str('gradYM'); const eduYrs=num('eduYears');
+  const subLiveM=num('subLiveM'); const subWorkM=num('subWorkM');
+  const innovation=parseInt(str('innovation'));
+  const taxYearsScore=radio('taxYears');
+  const taxViolScore=radio('taxViolR');
+  const taxScore=taxYearsScore+taxViolScore;
+  const honor=parseInt(str('honor')); const detention=num('detention');
+
+  const res=str('residenceYM'); const rym=parseYM(res);
+  const hasRes=rym&&((baseYear-rym.y)*12+(12-rym.m))>=0;
+  const ssCont=ssM-backpay; const ssOk=ssCont>=84&&backpay<=5;
+  const retireOk=calcRetireOk(birthStr,gender,baseYear,12);
+  const noCrim=criminal==='no';
+  const qualified=hasRes&&ssOk&&retireOk&&noCrim;
+
+  const qRows=[
+    {ok:hasRes,label:'持有北京市居住证'},
+    {ok:ssOk,label:`在京连续缴社保≥7年（补缴${backpay}月${backpay>5?' ⚠超限':''} ）`},
+    {ok:retireOk,label:'未达法定退休年龄'},
+    {ok:noCrim,label:'无刑事犯罪记录'},
+  ];
+  document.getElementById('qualResult').innerHTML=qRows.map(r=>`<div class="qual-row"><span class="badge ${r.ok?'ok':'fail'}">${r.ok?'✓':'✗'}</span><span style="color:${r.ok?'var(--text)':'var(--danger)'}">${r.label}</span></div>`).join('');
+
+  const params={ssM,ownM,rentM,eduLevel,gradStr,eduYrs,ssStartStr,subLiveM,subWorkM,innovation,taxScore,honor,detention,birthStr,baseYear};
+  const current=buildScoreObject(params);
+
+  document.getElementById('totalScore').textContent=current.total.toFixed(1);
+  document.getElementById('scoreYear').textContent=`基准：${baseYear}年12月31日`;
+
+  // future projection
+  const futureYear=parseInt(document.getElementById('futureYear').value)||0;
+  let future=null;
+  if(futureYear>baseYear){
+    const addYears=futureYear-baseYear;
+    const addMonths=addYears*12;
+    // Social insurance max: ~(baseYear-1998)*12+12 from 1998.7, cap at practical ceiling
+    const newSsM=ssM+addMonths;
+    // Housing: can increase but capped at new ssM; we add proportionally
+    const newOwnM=ownM+addMonths; // user may have continued living there
+    const newRentM=rentM+addMonths;
+    // Suburban: add months
+    const newSubLiveM=subLiveM>0?subLiveM+addMonths:0;
+    const newSubWorkM=subWorkM>0?subWorkM+addMonths:0;
+    // Tax: stays same unless changed in sim
+    const futureParams={...params,ssM:newSsM,ownM:newOwnM,rentM:newRentM,subLiveM:newSubLiveM,subWorkM:newSubWorkM,baseYear:futureYear};
+    future=buildScoreObject(futureParams);
+
+    const projInfo=document.getElementById('projInfo');
+    projInfo.style.display='block';
+    projInfo.textContent=`预测假设：社保/住所/职住继续按当前状态累积${addYears}年；纳税/创新/荣誉等不变；年龄按${futureYear}年计算。实际分数以届时申报规则为准。`;
+    document.getElementById('colFuture').textContent=futureYear+'年';
+    document.getElementById('colDiff').textContent='变化';
+    document.getElementById('colFuture').style.display='';
+    document.getElementById('colDiff').style.display='';
+  } else {
+    document.getElementById('projInfo').style.display='none';
+    document.getElementById('colFuture').style.display='none';
+    document.getElementById('colDiff').style.display='none';
+  }
+  document.getElementById('colA').textContent=baseYear+'年';
+
+  // build table
+  const rows=[
+    {name:'合法稳定就业（净）',a:current.netSs,f:future?future.netSs:null,note:current.deduct.ssDeductScore>0?`(学历扣-${current.deduct.ssDeductScore})`:null},
+    {name:'自有住所居住（净）',a:current.netOwn,f:future?future.netOwn:null,note:current.deduct.ownDeductScore>0?`(扣-${current.deduct.ownDeductScore})`:null},
+    {name:'租赁/宿舍居住（净）',a:current.netRent,f:future?future.netRent:null,note:current.deduct.rentDeductScore>0?`(扣-${current.deduct.rentDeductScore.toFixed(1)})`:null},
+    {name:'教育背景',a:current.eduLevel,f:future?future.eduLevel:null},
+    {name:'职住区域',a:current.suburban,f:future?future.suburban:null},
+    {name:'创新创业',a:current.innovation,f:future?future.innovation:null},
+    {name:'纳税',a:current.taxScore,f:future?future.taxScore:null},
+    {name:'年龄',a:current.ageScore,f:future?future.ageScore:null},
+    {name:'荣誉表彰',a:current.honor,f:future?future.honor:null},
+    {name:'守法记录',a:current.detentionScore,f:future?future.detentionScore:null},
+  ];
+
+  let html='';
+  for(const r of rows){
+    const aStr=fmt(r.a); const cls=r.a>0?'pos':r.a<0?'neg':'zer';
+    const note=r.note?`<div class="ded">${r.note}</div>`:'';
+    let fCell='', dCell='';
+    if(future&&r.f!==null){
+      const diff=r.f-r.a;
+      const fcls=r.f>0?'pos':r.f<0?'neg':'zer';
+      fCell=`<td class="${fcls}">${fmt(r.f)}</td>`;
+      const dcls=diff>0?'diff-cell up':diff<0?'diff-cell dn':'diff-cell';
+      dCell=`<td class="${dcls}">${diff>0?'+':''}${diff===0?'—':fmt(diff)}</td>`;
+    }
+    html+=`<tr><td class="name">${r.name}${note}</td><td class="${cls}">${aStr}</td>${fCell}${dCell}</tr>`;
+  }
+  // total row
+  const totFCell=future?`<td class="pos" style="font-weight:700">${future.total.toFixed(1)}</td>`:'';
+  const totDCell=future?`<td class="${future.total-current.total>0?'diff-cell up':'diff-cell dn'}">${future.total-current.total>0?'+':''}${(future.total-current.total).toFixed(1)}</td>`:'';
+  html+=`<tr class="total-r"><td class="name">合计</td><td style="font-weight:700">${current.total.toFixed(1)}</td>${totFCell}${totDCell}</tr>`;
+  document.getElementById('projBody').innerHTML=html;
+
+  state={current,params,baseYear,ssM,ownM,rentM,eduLevel,gradStr,eduYrs,ssStartStr,taxScore};
+}
+
+function fmt(v){ if(v===null||v===undefined)return'—'; return (v>=0?'+':'')+v.toFixed(1); }
+
+function toggleSim(type){
+  document.getElementById('simBody_'+type).style.display=
+    document.getElementById('chk_'+type).checked ? 'block' : 'none';
+}
+
+function runSim(){
+  if(!state){alert('请先点击"计算积分"');return;}
+  const useTax=document.getElementById('chk_tax').checked;
+  const useEdu=document.getElementById('chk_edu').checked;
+
+  // tax score for sim
+  let simTaxScore=state.taxScore;
+  if(useTax){
+    const ty=radio('sim_taxYears');
+    const tv=radio('sim_taxViolR');
+    simTaxScore=ty+tv;
+  }
+
+  // edu params for sim
+  let simEduLevel=state.eduLevel, simGradStr=state.gradStr, simEduYrs=state.eduYrs;
+  if(useEdu){
+    simEduLevel=parseInt(document.getElementById('sim_eduLevel').value);
+    simGradStr=document.getElementById('sim_gradYM').value;
+    simEduYrs=parseFloat(document.getElementById('sim_eduYears').value)||3;
+  }
+
+  const simParams={...state.params, taxScore:simTaxScore, eduLevel:simEduLevel, gradStr:simGradStr, eduYrs:simEduYrs};
+  const simResult=buildScoreObject(simParams);
+  const A=state.current, B=simResult;
+
+  const rows=[
+    {name:'就业（净）', a:A.netSs, b:B.netSs},
+    {name:'自有住所（净）', a:A.netOwn, b:B.netOwn},
+    {name:'租赁住所（净）', a:A.netRent, b:B.netRent},
+    {name:'教育背景', a:A.eduLevel, b:B.eduLevel},
+    {name:'纳税', a:A.taxScore, b:B.taxScore},
+    {name:'年龄', a:A.ageScore, b:B.ageScore},
+    {name:'职住/创新/荣誉', a:A.suburban+A.innovation+A.honor, b:B.suburban+B.innovation+B.honor},
+    {name:'守法记录', a:A.detentionScore, b:B.detentionScore},
+  ];
+
+  let html='';
+  for(const r of rows){
+    const diff=r.b-r.a;
+    const ac=r.a>0?'pos':r.a<0?'neg':'zer';
+    const bc=r.b>0?'pos':r.b<0?'neg':'zer';
+    const dc=diff>0?'diff-up':diff<0?'diff-dn':'';
+    const diffStr=diff===0?'—':`<span class="${dc}">${diff>0?'+':''}${diff.toFixed(1)}</span>`;
+    // only show changed rows highlighted
+    const changed=diff!==0;
+    html+=`<div class="rrow" style="${changed?'background:var(--accent-light)':''}">
+      <span style="color:var(--text2)">${r.name}</span>
+      <span class="${ac}">${r.a>=0?'+':''}${r.a.toFixed(1)}</span>
+      <span class="${bc}" style="display:flex;align-items:center;gap:6px">${r.b>=0?'+':''}${r.b.toFixed(1)} ${changed?diffStr:''}</span>
+    </div>`;
+  }
+  document.getElementById('sim_rows').innerHTML=html;
+  document.getElementById('simTotA').textContent=A.total.toFixed(1);
+  document.getElementById('simTotB').textContent=B.total.toFixed(1);
+  const diff=B.total-A.total;
+  const dl=document.getElementById('simDiffLabel');
+  dl.textContent=(diff>0?'+':'')+diff.toFixed(1)+' 分';
+  dl.className=diff>0?'diff-up':diff<0?'diff-dn':'';
+  document.getElementById('sim_result').style.display='block';
+}
+
+calculate();
+</script>
+</body>
+</html>
